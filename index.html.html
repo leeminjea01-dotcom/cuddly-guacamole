@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>축복 오락실</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#27206b,#070b20 65%);color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:18px}
+h1{color:#ffdc45;text-shadow:0 0 14px #ff8c00;margin:8px}.sub{color:#b9c8ff;margin-bottom:16px}
+main{max-width:700px;margin:auto}.games,.controls{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+button{border:2px solid #667bff;background:#17245a;color:white;border-radius:12px;padding:13px;font-weight:800;font-size:16px}
+button.active{border-color:#ffe45b;background:#45369a}button small{display:block;font-weight:500;font-size:12px;margin-top:4px}
+#status{display:flex;justify-content:space-between;margin:15px 2px 8px;color:#ffe45b;font-weight:bold}
+canvas{width:100%;height:auto;background:#050b20;border:3px solid #637cff;border-radius:12px;touch-action:none}
+#msg{min-height:30px;color:#c9d9ff;margin:10px}
+.controls{grid-template-columns:repeat(3,1fr)}.controls button{padding:12px 5px}
+</style>
+<main><h1>👑 축복 오락실 👑</h1><div class="sub">WELCOME TO BLESSING ARCADE</div>
+<div class="games">
+<button data-game="space">🚀 갤러그<small>우주선을 조종해 적을 맞혀요</small></button>
+<button data-game="snake">🐍 뱀 게임<small>먹이를 먹고 길어져요</small></button>
+<button data-game="race">🏎️ 자동차 레이싱<small>차량을 피해 달려요</small></button>
+<button data-game="brick">🧱 벽돌 깨기<small>공으로 벽돌을 깨요</small></button>
+</div>
+<div id="status"><span id="name">게임을 선택하세요!</span><span id="score">점수: 0</span></div>
+<canvas id="screen" width="600" height="360"></canvas><div id="msg">위에서 게임을 선택하세요.</div>
+<div class="controls">
+<button data-key="left">⬅️ 왼쪽</button><button data-key="fire">🔴 발사 / 시작</button><button data-key="right">오른쪽 ➡️</button>
+<button data-key="up">⬆️ 위</button><button data-key="down">⬇️ 아래</button><button id="restart">🔄 다시 시작</button>
+</div><p class="sub">컴퓨터: 방향키와 스페이스바 · 휴대폰: 화면 버튼</p></main>
+<script>
+(()=>{const c=document.querySelector('canvas'),x=c.getContext('2d'),W=600,H=360,$=s=>document.querySelector(s);
+let g='',p={},items=[],shots=[],bricks=[],keys={},score=0,over=false,t=0,last=0,raf=0;
+const names={space:'🚀 갤러그',snake:'🐍 뱀 게임',race:'🏎️ 자동차 레이싱',brick:'🧱 벽돌 깨기'};
+function sc(n){score=n;$('#score').textContent='점수: '+n}
+function say(s){$('#msg').textContent=s}
+function R(a,b,w,h,col){x.fillStyle=col;x.fillRect(a,b,w,h)}
+function T(s,a,b,z=22,col='white'){x.fillStyle=col;x.font='bold '+z+'px sans-serif';x.textAlign='center';x.fillText(s,a,b)}
+function food(){let a,b;do{a=20+Math.floor(Math.random()*28)*20;b=20+Math.floor(Math.random()*16)*20}while(p.body.some(q=>q.x===a&&q.y===b));p.food={x:a,y:b}}
+function start(v){cancelAnimationFrame(raf);g=v;over=false;t=0;items=[];shots=[];bricks=[];keys={};sc(0);$('#name').textContent=names[g];document.querySelectorAll('[data-game]').forEach(b=>b.classList.toggle('active',b.dataset.game===g));
+if(g==='space')p={x:300,y:310};
+if(g==='snake'){p={dir:'right',next:'right',body:[{x:300,y:180},{x:280,y:180},{x:260,y:180}]};food()}
+if(g==='race')p={x:300};
+if(g==='brick'){p={x:300,bx:300,by:260,vx:3,vy:-3,launch:false};for(let r=0;r<4;r++)for(let k=0;k<9;k++)bricks.push({x:34+k*60,y:35+r*25,on:true,col:['#ff5275','#ffb52e','#36d78c','#49a8ff'][r]})}
+say('게임 시작! 조작 버튼을 눌러보세요.');last=performance.now();draw();raf=requestAnimationFrame(loop)}
+function end(s){over=true;say(s+' · 다시 시작을 눌러보세요!')}
+function update(d){t+=d;
+if(g==='space'){if(keys.left)p.x-=5*d;if(keys.right)p.x+=5*d;p.x=Math.max(20,Math.min(580,p.x));if(keys.fire&&Math.floor(t/4)!==Math.floor((t-d)/4))shots.push({x:p.x,y:p.y-15});if(Math.floor(t/40)!==Math.floor((t-d)/40))for(let i=0;i<5;i++)items.push({x:65+i*118,y:30,v:1.4+Math.random()});shots.forEach(b=>b.y-=8*d);items.forEach(e=>e.y+=e.v*d);shots.forEach(b=>items.forEach(e=>{if(!e.dead&&Math.abs(b.x-e.x)<22&&Math.abs(b.y-e.y)<18){e.dead=b.dead=true;sc(score+10)}}));shots=shots.filter(b=>!b.dead&&b.y>0);items=items.filter(e=>!e.dead&&e.y<355);if(items.some(e=>Math.abs(e.x-p.x)<23&&Math.abs(e.y-p.y)<20))end('우주선이 부딪혔어요!')}
+if(g==='snake'&&Math.floor(t/8)!==Math.floor((t-d)/8)){if(keys.left&&p.dir!=='right')p.next='left';if(keys.right&&p.dir!=='left')p.next='right';if(keys.up&&p.dir!=='down')p.next='up';if(keys.down&&p.dir!=='up')p.next='down';p.dir=p.next;let h={...p.body[0]};if(p.dir==='left')h.x-=20;if(p.dir==='right')h.x+=20;if(p.dir==='up')h.y-=20;if(p.dir==='down')h.y+=20;if(h.x<0||h.x>=600||h.y<0||h.y>=360||p.body.some(a=>a.x===h.x&&a.y===h.y)){end('게임 종료!');return}p.body.unshift(h);if(h.x===p.food.x&&h.y===p.food.y){sc(score+10);food()}else p.body.pop()}
+if(g==='race'){if(keys.left)p.x-=5*d;if(keys.right)p.x+=5*d;p.x=Math.max(120,Math.min(480,p.x));if(Math.floor(t/35)!==Math.floor((t-d)/35))items.push({x:[155,255,355,455][Math.floor(Math.random()*4)],y:-30});items.forEach(e=>e.y+=4*d);if(items.some(e=>Math.abs(e.x-p.x)<36&&Math.abs(e.y-300)<43))end('충돌했어요!');items=items.filter(e=>{if(e.y>370){sc(score+10);return false}return true})}
+if(g==='brick'&&p.launch){if(keys.left)p.x-=6*d;if(keys.right)p.x+=6*d;p.x=Math.max(45,Math.min(555,p.x));p.bx+=p.vx*d;p.by+=p.vy*d;if(p.bx<8||p.bx>592)p.vx*=-1;if(p.by<8)p.vy*=-1;if(p.by>315&&p.by<340&&p.bx>p.x-48&&p.bx<p.x+48)p.vy=-Math.abs(p.vy);if(p.by>355){end('공을 놓쳤어요!');return}bricks.forEach(b=>{if(b.on&&p.bx>b.x&&p.bx<b.x+52&&p.by>b.y&&p.by<b.y+18){b.on=false;p.vy*=-1;sc(score+10)}});if(bricks.every(b=>!b.on))end('축하해요! 모두 깼어요!')}}
+function draw(){R(0,0,W,H,'#050b20');if(!g){T('👑 축복 오락실 👑',300,145,36,'#ffd94c');T('게임을 선택하세요!',300,205,25,'#70cfff');return}
+if(g==='space'){for(let i=0;i<35;i++){x.fillStyle='#7187cc';x.fillRect(i*97%600,(i*67+t*1.5)%360,2,2)}items.forEach(e=>T('👾',e.x,e.y,24));shots.forEach(b=>R(b.x-2,b.y,4,13,'#ffed65'));T('🚀',p.x,p.y+12,32)}
+if(g==='snake'){for(let a=0;a<600;a+=20)for(let b=0;b<360;b+=20){x.strokeStyle='#152b39';x.strokeRect(a,b,20,20)}T('🍎',p.food.x+10,p.food.y+17,18);p.body.forEach((a,i)=>R(a.x+2,a.y+2,16,16,i?'#27c86c':'#a5ff36'))}
+if(g==='race'){R(100,0,400,H,'#303747');for(let y=-40+(t*5)%80;y<H;y+=80){R(295,y,10,40,'#eee');R(105,y,5,40,'#fff');R(490,y,5,40,'#fff')}items.forEach(e=>T('🚙',e.x,e.y+15,30));T('🏎️',p.x,318,34)}
+if(g==='brick'){bricks.forEach(b=>{if(b.on){R(b.x,b.y,52,18,b.col);R(b.x,b.y,52,3,'white')}});R(p.x-45,340,90,10,'#65dfff');x.fillStyle='white';x.beginPath();x.arc(p.bx,p.by,8,0,Math.PI*2);x.fill();if(!p.launch)T('시작 버튼을 누르세요!',300,230,23,'#ffe66d')}
+if(over){R(75,135,450,85,'#12183d');T('GAME OVER',300,172,32,'#ffe45c');T('점수: '+score,300,204,20)}}
+function loop(n){if(!g)return;let d=Math.min(2,(n-last)/16.67);last=n;if(!over)update(d);draw();raf=requestAnimationFrame(loop)}
+function key(k,v){keys[k]=v;if(g==='brick'&&k==='fire'&&v&&!p.launch){p.launch=true;say('공이 출발했어요!')}}
+document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>start(b.dataset.game));
+document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;b.onpointerdown=e=>{e.preventDefault();key(k,true)};['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>key(k,false)))});
+$('#restart').onclick=()=>{if(g)start(g)};
+window.addEventListener('keydown',e=>{let k={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',' ':'fire'}[e.key];if(k){e.preventDefault();key(k,true)}});window.addEventListener('keyup',e=>{let k={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',' ':'fire'}[e.key];if(k)key(k,false)});draw()})();
+</script></html>
